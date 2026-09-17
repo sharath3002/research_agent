@@ -89,3 +89,12 @@ Report the **human-gold accuracy number**, not the agent's self-reported
 | `human_review.csv` | Your hand-checked sample (generated template, then filled in by you) |
 | `verification_report.json` | Output of `verify.py` (generated) |
 | `case_study.html` | The reviewer-facing page - reads the same shape of data as `apps_data.json` |
+
+
+
+## Testimonials
+
+<img width="1626" height="586" alt="image" src="https://github.com/user-attachments/assets/c0a53352-ca4d-4917-a032-8ef6e8fa0624" />
+<img width="1637" height="533" alt="image" src="https://github.com/user-attachments/assets/661e1d86-5576-4751-9a4c-103e2c3fa9fb" />
+<img width="1675" height="808" alt="image" src="https://github.com/user-attachments/assets/f7b2f1cf-7af5-45b4-bd1d-84c5df218163" />
+
