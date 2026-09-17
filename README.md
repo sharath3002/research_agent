@@ -1,8 +1,8 @@
-# research_agent
-The research agent which can dive deep into website applications for data researching and analysis.
+
+
 
 # Composio App Research Agent
-
+The research agent which can dive deep into website applications for data researching and analysis.
 Researches and produces a structured,
 evidence-linked verdict per app (auth model, self-serve vs gated, API
 surface, buildability). Built *with* Composio: the
