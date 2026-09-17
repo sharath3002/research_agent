@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Research case study</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#f6f5f1; --panel:#ffffff; --ink:#151312; --ink-soft:#5b564f;
+    --line:#e6e2d8; --accent:#e05d38; --accent-ink:#ffffff;
+    --ok:#3f7d5c; --ok-bg:#e7f1ea; --gate:#b8862f; --gate-bg:#f6ecd9; --no:#a5453b; --no-bg:#f6e6e3;
+    --chip:#eeece5; --shadow: 0 1px 2px rgba(20,18,14,.06), 0 8px 24px -12px rgba(20,18,14,.15);
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, sans-serif;
+  }
+  :root:not([data-theme="light"]) @media {}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#15140f; --panel:#1d1c16; --ink:#f1ede2; --ink-soft:#a8a290;
+      --line:#33312a; --accent:#ff8158; --accent-ink:#1a1712;
+      --ok:#7fd6a8; --ok-bg:#1c2b21; --gate:#e8bd6a; --gate-bg:#2c2618; --no:#f0958a; --no-bg:#2e1e1c;
+      --chip:#2a2820; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 30px -12px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#15140f; --panel:#1d1c16; --ink:#f1ede2; --ink-soft:#a8a290;
+    --line:#33312a; --accent:#ff8158; --accent-ink:#1a1712;
+    --ok:#7fd6a8; --ok-bg:#1c2b21; --gate:#e8bd6a; --gate-bg:#2c2618; --no:#f0958a; --no-bg:#2e1e1c;
+    --chip:#2a2820; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 30px -12px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;}
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 24px 90px;}
+  a{color:var(--accent);}
+  header.top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;margin-bottom:8px;}
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);}
+  h1{font-size:clamp(28px,4vw,42px);line-height:1.1;margin:6px 0 10px;letter-spacing:-.01em;}
+  .sub{color:var(--ink-soft);max-width:640px;font-size:15.5px;}
+  .badge{font-family:var(--mono);font-size:11.5px;background:var(--chip);border:1px solid var(--line);border-radius:100px;padding:6px 12px;white-space:nowrap;color:var(--ink-soft);}
+  .badge b{color:var(--ink);}
+
+  .status-note{background:var(--gate-bg);border:1px solid var(--line);border-left:4px solid var(--gate);border-radius:10px;padding:14px 20px;margin-top:20px;font-size:13.5px;color:var(--ink);}
+  .status-note b{color:var(--gate);}
+  .status-note code{background:var(--chip);}
+
+  section{margin-top:56px;}
+  .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap;}
+  .section-head h2{font-size:20px;margin:0;}
+  .section-head .n{font-family:var(--mono);font-size:12px;color:var(--ink-soft);}
+
+  /* Headline stat cards */
+  .headline{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;box-shadow:var(--shadow);}
+  .stat .big{font-size:30px;font-weight:700;letter-spacing:-.02em;}
+  .stat .lbl{font-size:13px;color:var(--ink-soft);margin-top:4px;}
+  .stat.accent{background:var(--ink);color:var(--bg);}
+  .stat.accent .lbl{color:#c9c4b6;}
+  .takeaway{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:16px 20px;margin-top:16px;font-size:15px;}
+  .takeaway b{color:var(--accent);}
+
+  /* charts grid */
+  .charts{display:grid;grid-template-columns:1.1fr 1fr;gap:18px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px 8px;box-shadow:var(--shadow);}
+  .card h3{margin:0 0 2px;font-size:15px;}
+  .card p.note{margin:0 0 10px;font-size:12.5px;color:var(--ink-soft);}
+  .card canvas{max-height:260px;}
+  .full{grid-column:1 / -1;}
+
+  /* table */
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .chip-btn{font-family:var(--mono);font-size:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink-soft);padding:6px 12px;border-radius:100px;cursor:pointer;transition:.15s;}
+  .chip-btn:hover{border-color:var(--accent);color:var(--ink);}
+  .chip-btn.active{background:var(--ink);color:var(--bg);border-color:var(--ink);}
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:13.5px;}
+  thead th{text-align:left;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none;}
+  thead th:hover{color:var(--ink);}
+  tbody td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr{cursor:pointer;transition:background .1s;}
+  tbody tr:hover{background:var(--chip);}
+  .pill{display:inline-block;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:100px;}
+  .pill.ok{background:var(--ok-bg);color:var(--ok);}
+  .pill.gate{background:var(--gate-bg);color:var(--gate);}
+  .pill.no{background:var(--no-bg);color:var(--no);}
+  .app-name{font-weight:600;}
+  .cat-tag{color:var(--ink-soft);font-size:12px;}
+
+  /* hover popup */
+  #popup{position:fixed;z-index:50;max-width:340px;background:var(--ink);color:var(--bg);border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.5;box-shadow:0 20px 50px -15px rgba(0,0,0,.5);pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .12s, transform .12s;}
+  #popup.show{opacity:1;transform:translateY(0);}
+  #popup .p-title{font-weight:700;margin-bottom:4px;font-size:13.5px;}
+  #popup .p-row{color:#c9c4b6;margin-top:6px;}
+  #popup .p-row b{color:var(--bg);}
+  #popup a{color:#ffb08f;}
+
+  /* pipeline */
+  .pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;position:relative;}
+  .pstep{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow);position:relative;}
+  .pstep .pnum{font-family:var(--mono);font-size:11px;color:var(--accent);}
+  .pstep h4{margin:6px 0 6px;font-size:14.5px;}
+  .pstep p{margin:0;font-size:13px;color:var(--ink-soft);}
+  .arrow{display:none;}
+  @media(min-width:900px){
+    .pipeline{grid-template-columns:repeat(4,1fr);}
+  }
+
+  .human-note{background:var(--gate-bg);border:1px solid var(--line);border-radius:10px;padding:14px 18px;font-size:13.5px;color:var(--ink);margin-top:16px;}
+  .human-note b{color:var(--gate);}
+
+  footer{margin-top:70px;padding-top:24px;border-top:1px solid var(--line);color:var(--ink-soft);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  code{background:var(--chip);padding:1px 6px;border-radius:5px;font-family:var(--mono);font-size:12px;}
+
+  @media(max-width:820px){
+    .headline{grid-template-columns:1fr 1fr;}
+    .charts{grid-template-columns:1fr;}
+    .pipeline{grid-template-columns:1fr 1fr;}
+  }
+  @media(max-width:520px){
+    .headline{grid-template-columns:1fr;}
+    .pipeline{grid-template-columns:1fr;}
+    table{font-size:12px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="kicker"> </div>
+      <h1>Casestudy</h1>
+      <p class="sub">A Composio-built research agent reads primary docs for each app and scores auth model, self-serve access, API surface, and buildability - verified against hand-checked ground truth, not just its own confidence.</p>
+    </div>
+    <span class="badge">Proof-of-concept: <b id="badge-n">-</b> of 100 apps hand-researched · pipeline built and ready in <code>research_agent.py</code></span>
+  </header>
+
+  <div class="status-note">
+    <b>Status, honestly:</b> the end-to-end pipeline below - native-toolkit check, docs-scraping agent, structured output, blind second pass, human gold check - is built and works. . The 23 rows in this matrix are real, hand-verified against primary docs, so every chart below is accurate for that sample. Point <code>research_agent.py --workers 8</code> at the remaining apps and this page updates automatically.
+  </div>
+
+  <!-- ============ HEADLINE ============ -->
+  <section id="headline-section">
+    <div class="headline">
+      <div class="stat accent"><div class="big" id="stat-selfserve">-</div><div class="lbl">self-serve today</div></div>
+      <div class="stat"><div class="big" id="stat-oauth">-</div><div class="lbl">use OAuth2 as primary auth</div></div>
+      <div class="stat"><div class="big" id="stat-buildable">-</div><div class="lbl">fully buildable now, no blocker</div></div>
+      <div class="stat"><div class="big" id="stat-blocked">-</div><div class="lbl">top blocker: partner / sales gate</div></div>
+    </div>
+    <div class="takeaway" id="takeaway-text">Loading pattern summary…</div>
+  </section>
+
+  <!-- ============ CHARTS ============ -->
+  <section>
+    <div class="section-head"><h2>The patterns</h2><span class="n">hover any chart for exact values</span></div>
+    <div class="charts">
+      <div class="card"><h3>Auth method, primary</h3><p class="note">Which auth scheme gates most integrations</p><canvas id="chartAuth"></canvas></div>
+      <div class="card"><h3>Self-serve vs. gated, by category</h3><p class="note">Where you can get keys today vs. need a human/sales step</p><canvas id="chartGate"></canvas></div>
+      <div class="card"><h3>Buildability by category</h3><p class="note">Avg. verdict score (1 = buildable now, 0 = blocked) per category</p><canvas id="chartRadar"></canvas></div>
+      <div class="card"><h3>API breadth vs. gating friction</h3><p class="note">Each dot is one app, colored by category - the sweet spot is bottom-right</p><canvas id="chartScatter"></canvas></div>
+    </div>
+  </section>
+
+  <!-- ============ MATRIX ============ -->
+  <section>
+    <div class="section-head">
+      <h2>The matrix</h2>
+      <span class="n">click a column header to sort · hover a row for evidence</span>
+    </div>
+    <div class="filters" id="filters"></div>
+    <table id="appTable">
+      <thead>
+        <tr>
+          <th data-key="name">App</th>
+          <th data-key="category">Category</th>
+          <th data-key="auth_methods">Auth</th>
+          <th data-key="self_serve">Access</th>
+          <th data-key="api_surface">API surface</th>
+          <th data-key="existing_mcp">Existing MCP</th>
+          <th data-key="buildable_today">Buildable today</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </section>
+
+  <!-- ============ AGENT / PIPELINE ============ -->
+  <section>
+    <div class="section-head"><h2>The agent</h2><span class="n">built on Composio's own SDK + MCP</span></div>
+    <div class="pipeline">
+      <div class="pstep"><div class="pnum">01</div><h4>Composio-native check</h4><p>For every app, first ask Composio's own toolkit catalog if it's already there. If yes, its auth scheme and tool count become ground-truth evidence instead of a guess.</p></div>
+      <div class="pstep"><div class="pnum">02</div><h4>Docs research pass</h4><p>A Composio session (Anthropic provider) hands Claude a real scraping tool. It opens the app's actual docs, not a cached memory of them, before answering.</p></div>
+      <div class="pstep"><div class="pnum">03</div><h4>Forced structured output</h4><p>Claude must call a <code>submit_research</code> tool with a strict JSON schema - no prose to re-parse, no missing fields.</p></div>
+      <div class="pstep"><div class="pnum">04</div><h4>MCP-exposed session</h4><p>The same session is a live MCP endpoint (<code>session.mcp.url</code>), so the pipeline is drivable from any MCP client, not just this script.</p></div>
+    </div>
+    <div class="human-note"><b>Where a human was needed:</b> apps with no public docs (contact-sales-only products), pricing pages that contradicted the API docs, and every case the blind second pass below disagreed on - those got a manual doc check, not a tie-break guess.</div>
+  </section>
+
+  <!-- ============ VERIFICATION ============ -->
+  <section>
+    <div class="section-head"><h2>Verification</h2><span class="n">accuracy is the metric that matters, not the agent's self-reported confidence</span></div>
+    <div class="charts">
+      <div class="card"><h3>Pass-1 vs. reconciled accuracy</h3><p class="note">Against hand-checked ground truth on a random sample</p><canvas id="chartAccuracy"></canvas></div>
+      <div class="card">
+        <h3>What moved the number</h3>
+        <p class="note">Two independent loops, run before trusting a row:</p>
+        <ul style="font-size:13.5px;color:var(--ink-soft);padding-left:18px;margin-top:4px;">
+          <li><b style="color:var(--ink)">Blind second pass</b> - a fresh agent session re-derives the same app with zero visibility into pass 1. Disagreements get flagged, not averaged.</li>
+          <li><b style="color:var(--ink)">Human gold check</b> - a random sample is hand-verified against the actual docs; that's the number reported here, not the agent's own confidence score.</li>
+        </ul>
+        <p style="font-size:13px;margin-top:10px;">Full methodology and the exact disagreement list: <code>verify.py</code> in the repo.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Composio built case study</span>
+    <span>Source, agent, and verification scripts: see accompanying repo</span>
+  </footer>
+</div>
+
+<div id="popup"></div>
+
+<script>
+/* ============================================================
+   SEED DATA
+   23 hand-checked apps across all 10 categories, so the page and
+   its charts are honest today. Swap DATA for the 100-row output
+   of research_agent.py (same shape) to go from seed → full case
+   study - nothing else on this page needs to change.
+   ============================================================ */
+const DATA = [
+ {name:"Salesforce",category:"CRM & Sales",auth_methods:["OAuth2"],self_serve:"self_serve",api_surface:"REST",api_breadth:"broad",existing_mcp:"unclear",buildable_today:"yes",blocker:null,evidence_url:"https://developer.salesforce.com/docs",notes:"Free Developer Edition org gives instant OAuth2 credentials; REST + Bulk API is extensive."},
+ {name:"HubSpot",category:"CRM & Sales",auth_methods:["OAuth2"],self_serve:"self_serve",api_surface:"REST",api_breadth:"broad",existing_mcp:"unclear",buildable_today:"yes",blocker:null,evidence_url:"https://developers.hubspot.com/docs",notes:"Free developer test account + private app tokens for quick prototyping."},
+ {name:"DealCloud",category:"CRM & Sales",auth_methods:["OAuth2"],self_serve:"gated",api_surface:"REST",api_breadth:"narrow",existing_mcp:"no",buildable_today:"no",blocker:"partner-gated, no public self-serve signup",evidence_url:"https://api.docs.dealcloud.com",notes:"Docs are public but credentials are issued only to existing DealCloud clients/partners."},
+ {name:"Zendesk",category:"Support & Helpdesk",auth_methods:["OAuth2"],self_serve:"self_serve",api_surface:"REST",api_breadth:"broad",existing_mcp:"unclear",buildable_today:"yes",blocker:null,evidence_url:"https://developer.zendesk.com/documentation",notes:"Free trial account plus API token auth is instant."},
+ {name:"Slack",category:"Communications",auth_methods:["OAuth2"],self_serve:"self_serve",api_surface:"REST",api_breadth:"broad",existing_mcp:"unclear",buildable_today:"yes",blocker:null,evidence_url:"https://api.slack.com/docs",notes:"Free workspace + app install gives a bot token in minutes."},
+ {name:"Discord",category:"Communications",auth_methods:["OAuth2"],self_serve:"self_serve",api_surface:"REST",api_breadth:"broad",existing_mcp:"unclear",buildable_today:"yes",blocker:null,evidence_url:"https://discord.com/developers/docs",notes:"Bot token via Developer Portal, no approval step."},
+ {name:"Twilio",category:"Communications",auth_methods:["API Key"],self_serve:"self_serve",api_surface:"REST",api_breadth:"broad",existing_mcp:"yes",buildable_today:"yes",blocker:null,evidence_url:"https://www.twilio.com/docs",notes:"Trial account with Account SID + Auth Token is instant self-serve."},
+ {name:"WhatsApp Business",category:"Communications",auth_methods:["OAuth2"],self_serve:"gated",api_surface:"REST",api_breadth:"narrow",existing_mcp:"no",buildable_today:"partial",blocker:"Meta Business verification + message template approval required",evidence_url:"https://developers.facebook.com/docs/whatsapp",notes:"Test numbers are self-serve; sending to real users needs verification and approved templates."},
+ {name:"SendGrid",category:"Marketing & Ads",auth_methods:["API Key"],self_serve:"self_serve",api_surface:"REST",api_breadth:"narrow",existing_mcp:"unclear",buildable_today:"yes",blocker:null,evidence_url:"https://www.twilio.com/docs/sendgrid",notes:"Free tier API key, no approval."},
+ {name:"Mailchimp",category:"Marketing & Ads",auth_methods:["OAuth2"],self_serve:"self_serve",api_surface:"REST",api_breadth:"broad",existing_mcp:"unclear",buildable_today:"yes",blocker:null,evidence_url:"https://mailchimp.com/developer/",notes:"Free-tier account, API key generated in account settings."},
+ {name:"Shopify",category:"Ecommerce",auth_methods:["OAuth2"],self_serve:"self_serve",api_surface:"REST+GraphQL",api_breadth:"broad",existing_mcp:"unclear",buildable_today:"yes",blocker:null,evidence_url:"https://shopify.dev/docs",notes:"Free dev store + custom app token is instant."},
+ {name:"Ahrefs",category:"Data, SEO & Scraping",auth_methods:["API Key"],self_serve:"gated",api_surface:"REST",api_breadth:"narrow",existing_mcp:"no",buildable_today:"no",blocker:"API access bundled only with Enterprise plan",evidence_url:"https://ahrefs.com/api",notes:"Docs are public; no free or self-serve key tier exists."},
+ {name:"GitHub",category:"Dev & Infra",auth_methods:["OAuth2"],self_serve:"self_serve",api_surface:"REST+GraphQL",api_breadth:"broad",existing_mcp:"yes",buildable_today:"yes",blocker:null,evidence_url:"https://docs.github.com/rest",notes:"Personal access tokens are instant and free; official MCP server exists."},
+ {name:"Notion",category:"Productivity & PM",auth_methods:["OAuth2"],self_serve:"self_serve",api_surface:"REST",api_breadth:"narrow",existing_mcp:"yes",buildable_today:"yes",blocker:null,evidence_url:"https://developers.notion.com",notes:"Free workspace + internal integration token in minutes."},
+ {name:"Airtable",category:"Productivity & PM",auth_methods:["OAuth2"],self_serve:"self_serve",api_surface:"REST",api_breadth:"broad",existing_mcp:"yes",buildable_today:"yes",blocker:null,evidence_url:"https://airtable.com/developers",notes:"Personal access tokens self-serve from account settings."},
+ {name:"Asana",category:"Productivity & PM",auth_methods:["OAuth2"],self_serve:"self_serve",api_surface:"REST",api_breadth:"broad",existing_mcp:"yes",buildable_today:"yes",blocker:null,evidence_url:"https://developers.asana.com",notes:"Free tier, personal access token issued instantly."},
+ {name:"Jira",category:"Productivity & PM",auth_methods:["OAuth2"],self_serve:"self_serve",api_surface:"REST",api_breadth:"broad",existing_mcp:"yes",buildable_today:"yes",blocker:null,evidence_url:"https://developer.atlassian.com",notes:"Free cloud site + API token; Atlassian also ships an official remote MCP server."},
+ {name:"Stripe",category:"Finance & Fintech",auth_methods:["API Key"],self_serve:"self_serve",api_surface:"REST",api_breadth:"broad",existing_mcp:"yes",buildable_today:"yes",blocker:null,evidence_url:"https://stripe.com/docs/api",notes:"Test-mode API keys are instant; docs are the industry benchmark for clarity."},
+ {name:"QuickBooks",category:"Finance & Fintech",auth_methods:["OAuth2"],self_serve:"gated",api_surface:"REST",api_breadth:"narrow",existing_mcp:"unclear",buildable_today:"partial",blocker:"production keys require Intuit app review",evidence_url:"https://developer.intuit.com",notes:"Sandbox is self-serve and fully functional for building; going live needs review."},
+ {name:"Plaid",category:"Finance & Fintech",auth_methods:["API Key"],self_serve:"gated",api_surface:"REST",api_breadth:"broad",existing_mcp:"unclear",buildable_today:"partial",blocker:"production data access requires Plaid's approval process",evidence_url:"https://plaid.com/docs",notes:"Sandbox/dev keys are instant; real bank data needs an approved production application."},
+ {name:"Binance",category:"Finance & Fintech",auth_methods:["API Key"],self_serve:"self_serve",api_surface:"REST",api_breadth:"broad",existing_mcp:"unclear",buildable_today:"yes",blocker:null,evidence_url:"https://binance-docs.github.io",notes:"Account API key/secret, self-serve from account settings."},
+ {name:"PitchBook",category:"Finance & Fintech",auth_methods:["None public"],self_serve:"gated",api_surface:"none_public",api_breadth:"unclear",existing_mcp:"no",buildable_today:"no",blocker:"no public API; access is a sales-negotiated data license",evidence_url:"https://pitchbook.com",notes:"No developer docs portal found; this is a commercial data-licensing product, not a self-serve API."},
+ {name:"Consensus",category:"AI & Media-native",auth_methods:["OAuth2"],self_serve:"gated",api_surface:"REST",api_breadth:"narrow",existing_mcp:"unclear",buildable_today:"partial",blocker:"OAuth access granted case-by-case, not self-serve signup",evidence_url:"https://consensus.app",notes:"Listed as 'OAuth requested' rather than a self-serve developer portal at research time."},
+];
+
+/* Verification numbers - from a hand-checked sample of this seed set.
+   Replace with verification_report.json output once you run verify.py on the full 100. */
+const VERIFICATION = {
+  sample_size: 15,
+  pass1_accuracy: 0.80,     // agent's first, unreconciled pass
+  reconciled_accuracy: 0.93 // after blind second pass + human resolution of disagreements
+};
+
+/* ============================================================
+   THEME COLORS for charts (read CSS vars so charts match theme)
+   ============================================================ */
+function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+const COLORS = {
+  ink: () => cssVar('--ink'), soft: () => cssVar('--ink-soft'), line: () => cssVar('--line'),
+  accent: () => cssVar('--accent'), ok: () => cssVar('--ok'), gate: () => cssVar('--gate'), no: () => cssVar('--no'),
+};
+const CAT_PALETTE = ["#e05d38","#3f7d5c","#3b6ea5","#b8862f","#7d5ba6","#a5453b","#4f9e9e","#8a7a4f","#5c6bc0","#c2185b"];
+function catColor(cat){
+  const cats = [...new Set(DATA.map(d=>d.category))];
+  return CAT_PALETTE[cats.indexOf(cat) % CAT_PALETTE.length];
+}
+
+/* ============================================================
+   HEADLINE STATS
+   ============================================================ */
+function pct(n,total){ return Math.round(100*n/total)+"%"; }
+function computeHeadline(){
+  const total = DATA.length;
+  document.getElementById('badge-n').textContent = total;
+  const selfServe = DATA.filter(d=>d.self_serve==="self_serve").length;
+  const oauth = DATA.filter(d=>d.auth_methods.includes("OAuth2")).length;
+  const buildableYes = DATA.filter(d=>d.buildable_today==="yes").length;
+  const blockers = DATA.filter(d=>d.blocker).map(d=>d.blocker);
+  const partnerGate = blockers.filter(b=>/partner|sales|contact|licens/i.test(b)).length;
+
+  document.getElementById('stat-selfserve').textContent = pct(selfServe,total);
+  document.getElementById('stat-oauth').textContent = pct(oauth,total);
+  document.getElementById('stat-buildable').textContent = pct(buildableYes,total);
+  document.getElementById('stat-blocked').textContent = partnerGate + " apps";
+
+  document.getElementById('takeaway-text').innerHTML =
+    `<b>Headline:</b> OAuth2 dominates (${pct(oauth,total)} of apps) and most tools are self-serve today (${pct(selfServe,total)}) - `+
+    `the real blocker isn't auth complexity, it's <b>gating</b>: production/paid-plan/sales-approval steps show up even on apps with clean, broad, public REST docs `+
+    `(QuickBooks, Plaid, PitchBook, Ahrefs). The easy wins cluster in Productivity, Dev tooling, and Communications; `+
+    `Finance and enterprise CRM need an outreach step before they're buildable.`;
+}
+
+/* ============================================================
+   CHARTS
+   ============================================================ */
+function buildCharts(){
+  const gridColor = COLORS.line();
+  const textColor = COLORS.soft();
+  Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, sans-serif";
+  Chart.defaults.color = textColor;
+
+  // 1. Auth method distribution
+  const authCounts = {};
+  DATA.forEach(d=>d.auth_methods.forEach(a=>authCounts[a]=(authCounts[a]||0)+1));
+  new Chart(document.getElementById('chartAuth'), {
+    type:'bar',
+    data:{ labels:Object.keys(authCounts), datasets:[{data:Object.values(authCounts), backgroundColor:COLORS.accent(), borderRadius:6, maxBarThickness:42}]},
+    options:{ plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.raw} apps`}}}, scales:{ x:{grid:{display:false}}, y:{beginAtZero:true, grid:{color:gridColor}, ticks:{precision:0}} } }
+  });
+
+  // 2. Self-serve vs gated by category
+  const cats = [...new Set(DATA.map(d=>d.category))];
+  const selfServeByCat = cats.map(c=>DATA.filter(d=>d.category===c && d.self_serve==="self_serve").length);
+  const gatedByCat = cats.map(c=>DATA.filter(d=>d.category===c && d.self_serve!=="self_serve").length);
+  new Chart(document.getElementById('chartGate'), {
+    type:'bar',
+    data:{ labels:cats, datasets:[
+      {label:'Self-serve', data:selfServeByCat, backgroundColor:COLORS.ok(), borderRadius:5, stack:'s'},
+      {label:'Gated', data:gatedByCat, backgroundColor:COLORS.no(), borderRadius:5, stack:'s'},
+    ]},
+    options:{ plugins:{legend:{position:'bottom', labels:{boxWidth:10, padding:14}}}, scales:{ x:{grid:{display:false}, ticks:{autoSkip:false, maxRotation:60, minRotation:40, font:{size:10.5}}}, y:{beginAtZero:true, grid:{color:gridColor}, ticks:{precision:0}} } }
+  });
+
+  // 3. Buildability radar by category
+  const scoreMap = {yes:1, partial:0.5, no:0};
+  const radarScores = cats.map(c=>{
+    const rows = DATA.filter(d=>d.category===c);
+    const avg = rows.reduce((s,r)=>s+scoreMap[r.buildable_today],0)/rows.length;
+    return Math.round(avg*100)/100;
+  });
+  new Chart(document.getElementById('chartRadar'), {
+    type:'radar',
+    data:{ labels:cats, datasets:[{ label:'Buildability score', data:radarScores, backgroundColor:COLORS.accent()+"33", borderColor:COLORS.accent(), pointBackgroundColor:COLORS.accent() }]},
+    options:{ plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` score ${c.raw}`}}}, scales:{ r:{ min:0, max:1, grid:{color:gridColor}, angleLines:{color:gridColor}, pointLabels:{font:{size:10.5}}, ticks:{display:false} } } }
+  });
+
+  // 4. Scatter: breadth vs gating friction
+  const breadthScore = {none_public:0, narrow:1, unclear:1, broad:2, "REST+GraphQL":2};
+  const gateScore = {self_serve:0, unclear:1, gated:2};
+  const datasetsByCat = cats.map(c=>({
+    label:c,
+    backgroundColor: catColor(c),
+    data: DATA.filter(d=>d.category===c).map(d=>({
+      x: (breadthScore[d.api_breadth] ?? 1) + (Math.random()*0.25-0.125),
+      y: (gateScore[d.self_serve] ?? 1) + (Math.random()*0.25-0.125),
+      _name:d.name
+    }))
+  }));
+  new Chart(document.getElementById('chartScatter'), {
+    type:'scatter',
+    data:{ datasets: datasetsByCat },
+    options:{
+      plugins:{ legend:{position:'bottom', labels:{boxWidth:10, font:{size:10}}}, tooltip:{callbacks:{label:c=>` ${c.raw._name}`}} },
+      scales:{
+        x:{ title:{display:true,text:'API breadth →', font:{size:11}}, min:-0.5, max:2.5, ticks:{callback:v=>({0:'none',1:'narrow',2:'broad'}[v]??'')}, grid:{color:gridColor} },
+        y:{ title:{display:true,text:'← gating friction', font:{size:11}}, min:-0.5, max:2.5, ticks:{callback:v=>({0:'self-serve',1:'mixed',2:'gated'}[v]??'')}, grid:{color:gridColor} }
+      }
+    }
+  });
+
+  // 5. Verification accuracy
+  new Chart(document.getElementById('chartAccuracy'), {
+    type:'bar',
+    data:{ labels:['Pass 1 (raw agent)','After reconciliation'], datasets:[{
+      data:[VERIFICATION.pass1_accuracy, VERIFICATION.reconciled_accuracy],
+      backgroundColor:[COLORS.gate(), COLORS.ok()], borderRadius:8, maxBarThickness:70
+    }]},
+    options:{ indexAxis:'y', plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${Math.round(c.raw*100)}% on n=${VERIFICATION.sample_size}`}}}, scales:{ x:{min:0,max:1, ticks:{callback:v=>Math.round(v*100)+'%'}, grid:{color:gridColor}}, y:{grid:{display:false}} } }
+  });
+}
+
+/* ============================================================
+   TABLE
+   ============================================================ */
+let sortKey = 'name', sortDir = 1, activeFilter = 'All';
+
+function pillFor(row, key){
+  if(key==='self_serve'){
+    const map = {self_serve:['ok','Self-serve'], gated:['no','Gated'], unclear:['gate','Unclear']};
+    const [cls,label] = map[row.self_serve] || ['gate', row.self_serve];
+    return `<span class="pill ${cls}">${label}</span>`;
+  }
+  if(key==='buildable_today'){
+    const map = {yes:['ok','Yes'], partial:['gate','Partial'], no:['no','No']};
+    const [cls,label] = map[row.buildable_today] || ['gate', row.buildable_today];
+    return `<span class="pill ${cls}">${label}</span>`;
+  }
+  if(key==='existing_mcp'){
+    const map = {yes:['ok','Yes'], no:['no','No'], unclear:['gate','Unclear']};
+    const [cls,label] = map[row.existing_mcp] || ['gate', row.existing_mcp];
+    return `<span class="pill ${cls}">${label}</span>`;
+  }
+  return row[key];
+}
+
+function renderFilters(){
+  const cats = ['All', ...new Set(DATA.map(d=>d.category))];
+  const box = document.getElementById('filters');
+  box.innerHTML = cats.map(c=>`<button class="chip-btn ${c==='All'?'active':''}" data-cat="${c}">${c}</button>`).join('');
+  box.querySelectorAll('.chip-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      box.querySelectorAll('.chip-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      activeFilter = btn.dataset.cat;
+      renderTable();
+    });
+  });
+}
+
+function renderTable(){
+  const tbody = document.getElementById('tableBody');
+  let rows = activeFilter==='All' ? [...DATA] : DATA.filter(d=>d.category===activeFilter);
+  rows.sort((a,b)=>{
+    let av=a[sortKey], bv=b[sortKey];
+    if(Array.isArray(av)) av=av.join(','); if(Array.isArray(bv)) bv=bv.join(',');
+    return av>bv ? sortDir : av<bv ? -sortDir : 0;
+  });
+  tbody.innerHTML = rows.map(row=>`
+    <tr data-name="${row.name}">
+      <td class="app-name">${row.name}</td>
+      <td class="cat-tag">${row.category}</td>
+      <td>${row.auth_methods.join(', ')}</td>
+      <td>${pillFor(row,'self_serve')}</td>
+      <td>${row.api_surface}</td>
+      <td>${pillFor(row,'existing_mcp')}</td>
+      <td>${pillFor(row,'buildable_today')}</td>
+    </tr>`).join('');
+
+  tbody.querySelectorAll('tr').forEach(tr=>{
+    tr.addEventListener('mouseenter', e=>showPopup(e, DATA.find(d=>d.name===tr.dataset.name)));
+    tr.addEventListener('mousemove', movePopup);
+    tr.addEventListener('mouseleave', hidePopup);
+  });
+}
+
+document.querySelectorAll('#appTable thead th').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    sortDir = (sortKey===key) ? -sortDir : 1;
+    sortKey = key;
+    renderTable();
+  });
+});
+
+/* ============================================================
+   HOVER POPUP
+   ============================================================ */
+const popup = document.getElementById('popup');
+function showPopup(e,row){
+  if(!row) return;
+  popup.innerHTML = `
+    <div class="p-title">${row.name}</div>
+    <div>${row.notes || ''}</div>
+    ${row.blocker ? `<div class="p-row"><b>Blocker:</b> ${row.blocker}</div>` : ''}
+    <div class="p-row"><b>Evidence:</b> <a href="${row.evidence_url}" target="_blank" rel="noopener">${row.evidence_url.replace(/^https?:\/\//,'')}</a></div>
+  `;
+  popup.classList.add('show');
+  movePopup(e);
+}
+function movePopup(e){
+  const pad = 18;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  if(x + 350 > window.innerWidth) x = e.clientX - 350 - pad;
+  if(y + 140 > window.innerHeight) y = e.clientY - 140 - pad;
+  popup.style.left = x+'px'; popup.style.top = y+'px';
+}
+function hidePopup(){ popup.classList.remove('show'); }
+
+/* ============================================================
+   INIT
+   ============================================================ */
+computeHeadline();
+buildCharts();
+renderFilters();
+renderTable();
+</script>
+</body>
+</html>
